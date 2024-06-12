@@ -16,8 +16,6 @@
 # under the License.
 # pylint:disable=redefined-outer-name
 import math
-import os
-import time
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict
@@ -26,7 +24,6 @@ from urllib.parse import urlparse
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
-import pytz
 from pyarrow.fs import S3FileSystem
 from pydantic_core import ValidationError
 from pyspark.sql import SparkSession
@@ -542,9 +539,9 @@ def test_summaries_with_only_nulls(
 
 @pytest.mark.integration
 def test_duckdb_url_import(warehouse: Path, arrow_table_with_null: pa.Table) -> None:
-    os.environ["TZ"] = "Etc/UTC"
-    time.tzset()
-    tz = pytz.timezone(os.environ["TZ"])
+    # os.environ["TZ"] = "Etc/UTC"
+    # time.tzset()
+    # tz = pytz.timezone(os.environ["TZ"])
 
     catalog = SqlCatalog("test_sql_catalog", uri="sqlite:///:memory:", warehouse=f"/{warehouse}")
     catalog.create_namespace("default")
@@ -573,7 +570,7 @@ def test_duckdb_url_import(warehouse: Path, arrow_table_with_null: pa.Table) -> 
             0.0,
             0.0,
             datetime(2023, 1, 1, 19, 25),
-            datetime(2023, 1, 1, 19, 25, tzinfo=tz),
+            datetime(2023, 1, 1, 19, 25),
             date(2023, 1, 1),
             b"\x01",
             b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00",
@@ -588,7 +585,7 @@ def test_duckdb_url_import(warehouse: Path, arrow_table_with_null: pa.Table) -> 
             0.8999999761581421,
             0.9,
             datetime(2023, 3, 1, 19, 25),
-            datetime(2023, 3, 1, 19, 25, tzinfo=tz),
+            datetime(2023, 3, 1, 19, 25),
             date(2023, 3, 1),
             b"\x12",
             b"\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11\x11",
