@@ -16,6 +16,8 @@
 # under the License.
 # pylint:disable=redefined-outer-name
 import math
+import os
+import time
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict
@@ -540,9 +542,9 @@ def test_summaries_with_only_nulls(
 
 @pytest.mark.integration
 def test_duckdb_url_import(warehouse: Path, arrow_table_with_null: pa.Table) -> None:
-    # os.environ["TZ"] = "Etc/UTC"
-    # time.tzset()
-    tz = pytz.timezone("Etc/UTC")
+    os.environ["TZ"] = "Etc/UTC"
+    time.tzset()
+    tz = pytz.timezone(os.environ["TZ"])
 
     catalog = SqlCatalog("test_sql_catalog", uri="sqlite:///:memory:", warehouse=f"/{warehouse}")
     catalog.create_namespace("default")
