@@ -2104,6 +2104,65 @@ class ManageSnapshots(UpdateTableMetadata["ManageSnapshots"]):
             self._set_ref_snapshot(snapshot_id=snapshot.snapshot_id, ref_name=MAIN_BRANCH, type=str(SnapshotRefType.BRANCH))
         return self
 
+    def set_min_snapshots_to_keep(self, branch_name: str, min_snapshots_to_keep: int) -> ManageSnapshots:
+        """
+        Set minimum number of snapshots to keep on the given branch.
+
+        Args:
+            branch_name (str): name of the branch
+            min_snapshots_to_keep (int): minimum number of snapshots to keep
+
+        Returns:
+            This for method chaining
+        """
+        if branch_name not in self._transaction._table.metadata.refs:
+            raise ValidationError(f"ref {branch_name} not found")
+        snapshot_id = self._transaction._table.metadata.refs[branch_name].snapshot_id
+        return self._set_ref_snapshot(
+            snapshot_id=snapshot_id,
+            ref_name=branch_name,
+            type=str(SnapshotRefType.BRANCH),
+            min_snapshots_to_keep=min_snapshots_to_keep,
+        )
+
+    def set_max_snapshot_age_ms(self, branch_name: str, max_snapshot_age_ms: int) -> ManageSnapshots:
+        """
+        Set minimum number of snapshots to keep on the given branch.
+
+        Args:
+            branch_name (str): name of the branch
+            max_snapshot_age_ms (int): maximum snapshot age in milliseconds
+
+        Returns:
+            This for method chaining
+        """
+        if branch_name not in self._transaction._table.metadata.refs:
+            raise ValidationError(f"ref {branch_name} not found")
+        snapshot_id = self._transaction._table.metadata.refs[branch_name].snapshot_id
+        return self._set_ref_snapshot(
+            snapshot_id=snapshot_id,
+            ref_name=branch_name,
+            type=str(SnapshotRefType.BRANCH),
+            max_snapshot_age_ms=max_snapshot_age_ms,
+        )
+
+    def set_max_ref_age_ms(self, ref_name: str, max_ref_age_ms: int) -> ManageSnapshots:
+        """
+        Set minimum number of snapshots to keep on the given branch / tag.
+
+        Args:
+            ref_name (str): name of the branch / tag
+            max_ref_age_ms (int): maximum ref age in milliseconds
+
+        Returns:
+            This for method chaining
+        """
+        if ref_name not in self._transaction._table.metadata.refs:
+            raise ValidationError(f"ref {ref_name} not found")
+        snapshot_id = self._transaction._table.metadata.refs[ref_name].snapshot_id
+        ref_type = self._transaction._table.metadata.refs[ref_name].snapshot_ref_type
+        return self._set_ref_snapshot(snapshot_id=snapshot_id, ref_name=ref_name, type=ref_type, max_ref_age_ms=max_ref_age_ms)
+
 
 class UpdateSchema(UpdateTableMetadata["UpdateSchema"]):
     _schema: Schema
