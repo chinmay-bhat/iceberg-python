@@ -65,6 +65,59 @@ def test_manage_snapshots_context_manager(catalog: Catalog) -> None:
     assert tbl.metadata.refs["testing2"].snapshot_id == expected_snapshot_id
 
 
+@pytest.mark.integration
+@pytest.mark.parametrize("catalog", [pytest.lazy_fixture("session_catalog_hive"), pytest.lazy_fixture("session_catalog")])
+def test_set_min_snapshots_to_keep(catalog: Catalog) -> None:
+    identifier = "default.test_table_snapshot_operations"
+    tbl = catalog.load_table(identifier)
+    assert len(tbl.history()) > 2
+    snapshot_id = tbl.history()[-2].snapshot_id
+    branch_name, min_snapshots_to_keep = "test_branch_min_snapshots_to_keep", 2
+    with tbl.manage_snapshots() as ms:
+        ms.create_branch(branch_name=branch_name, snapshot_id=snapshot_id)
+        ms.set_min_snapshots_to_keep(branch_name=branch_name, min_snapshots_to_keep=min_snapshots_to_keep)
+    assert tbl.metadata.refs[branch_name] == SnapshotRef(
+        snapshot_id=snapshot_id, snapshot_ref_type=str(SnapshotRefType.BRANCH), min_snapshots_to_keep=min_snapshots_to_keep
+    )
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("catalog", [pytest.lazy_fixture("session_catalog_hive"), pytest.lazy_fixture("session_catalog")])
+def test_set_max_snapshot_age_ms(catalog: Catalog) -> None:
+    identifier = "default.test_table_snapshot_operations"
+    tbl = catalog.load_table(identifier)
+    assert len(tbl.history()) > 3
+    snapshot_id = tbl.history()[-3].snapshot_id
+    branch_name, max_snapshot_age_ms = "test_branch_max_snapshot_age_ms", 3600000
+    with tbl.manage_snapshots() as ms:
+        ms.create_branch(branch_name=branch_name, snapshot_id=snapshot_id)
+        ms.set_max_snapshot_age_ms(branch_name=branch_name, max_snapshot_age_ms=max_snapshot_age_ms)
+    assert tbl.metadata.refs[branch_name] == SnapshotRef(
+        snapshot_id=snapshot_id, snapshot_ref_type=str(SnapshotRefType.BRANCH), max_snapshot_age_ms=max_snapshot_age_ms
+    )
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("catalog", [pytest.lazy_fixture("session_catalog_hive"), pytest.lazy_fixture("session_catalog")])
+def test_set_max_ref_age_ms(catalog: Catalog) -> None:
+    identifier = "default.test_table_snapshot_operations"
+    tbl = catalog.load_table(identifier)
+    assert len(tbl.history()) > 4
+    branch_snapshot_id, tag_snapshot_id = tbl.history()[-2].snapshot_id, tbl.history()[-3].snapshot_id
+    branch_name, tag_name, max_ref_age_ms = "test_branch_max_ref_age_ms", "test_tag_max_ref_age_ms", 604800000
+    with tbl.manage_snapshots() as ms:
+        ms.create_branch(branch_name=branch_name, snapshot_id=branch_snapshot_id)
+        ms.set_max_ref_age_ms(ref_name=branch_name, max_ref_age_ms=max_ref_age_ms)
+        ms.create_tag(tag_name=tag_name, snapshot_id=tag_snapshot_id)
+        ms.set_max_ref_age_ms(ref_name=tag_name, max_ref_age_ms=max_ref_age_ms)
+    assert tbl.metadata.refs[branch_name] == SnapshotRef(
+        snapshot_id=branch_snapshot_id, snapshot_ref_type=str(SnapshotRefType.BRANCH), max_ref_age_ms=max_ref_age_ms
+    )
+    assert tbl.metadata.refs[tag_name] == SnapshotRef(
+        snapshot_id=tag_snapshot_id, snapshot_ref_type=str(SnapshotRefType.TAG), max_ref_age_ms=max_ref_age_ms
+    )
+
+
 # Maintain relative order of tests for following apis like rollback, set_current_snapshot, etc.
 @pytest.mark.integration
 @pytest.mark.parametrize("catalog", [pytest.lazy_fixture("session_catalog_hive"), pytest.lazy_fixture("session_catalog")])
@@ -125,59 +178,6 @@ def test_set_current_snapshot_with_ref_name(catalog: Catalog) -> None:
     assert tbl.current_snapshot().snapshot_id != current_snapshot_id  # type: ignore
     assert tbl.metadata.refs[MAIN_BRANCH] == SnapshotRef(
         snapshot_id=expected_snapshot_id, snapshot_ref_type=str(SnapshotRefType.BRANCH)
-    )
-
-
-@pytest.mark.integration
-@pytest.mark.parametrize("catalog", [pytest.lazy_fixture("session_catalog_hive"), pytest.lazy_fixture("session_catalog")])
-def test_set_min_snapshots_to_keep(catalog: Catalog) -> None:
-    identifier = "default.test_table_snapshot_operations"
-    tbl = catalog.load_table(identifier)
-    assert len(tbl.history()) > 2
-    snapshot_id = tbl.history()[-2].snapshot_id
-    branch_name, min_snapshots_to_keep = "test_branch_min_snapshots_to_keep", 2
-    with tbl.manage_snapshots() as ms:
-        ms.create_branch(branch_name=branch_name, snapshot_id=snapshot_id)
-        ms.set_min_snapshots_to_keep(branch_name=branch_name, min_snapshots_to_keep=min_snapshots_to_keep)
-    assert tbl.metadata.refs[branch_name] == SnapshotRef(
-        snapshot_id=snapshot_id, snapshot_ref_type=str(SnapshotRefType.BRANCH), min_snapshots_to_keep=min_snapshots_to_keep
-    )
-
-
-@pytest.mark.integration
-@pytest.mark.parametrize("catalog", [pytest.lazy_fixture("session_catalog_hive"), pytest.lazy_fixture("session_catalog")])
-def test_set_max_snapshot_age_ms(catalog: Catalog) -> None:
-    identifier = "default.test_table_snapshot_operations"
-    tbl = catalog.load_table(identifier)
-    assert len(tbl.history()) > 3
-    snapshot_id = tbl.history()[-3].snapshot_id
-    branch_name, max_snapshot_age_ms = "test_branch_max_snapshot_age_ms", 3600000
-    with tbl.manage_snapshots() as ms:
-        ms.create_branch(branch_name=branch_name, snapshot_id=snapshot_id)
-        ms.set_max_snapshot_age_ms(branch_name=branch_name, max_snapshot_age_ms=max_snapshot_age_ms)
-    assert tbl.metadata.refs[branch_name] == SnapshotRef(
-        snapshot_id=snapshot_id, snapshot_ref_type=str(SnapshotRefType.BRANCH), max_snapshot_age_ms=max_snapshot_age_ms
-    )
-
-
-@pytest.mark.integration
-@pytest.mark.parametrize("catalog", [pytest.lazy_fixture("session_catalog_hive"), pytest.lazy_fixture("session_catalog")])
-def test_set_max_ref_age_ms(catalog: Catalog) -> None:
-    identifier = "default.test_table_snapshot_operations"
-    tbl = catalog.load_table(identifier)
-    assert len(tbl.history()) > 4
-    branch_snapshot_id, tag_snapshot_id = tbl.history()[-2].snapshot_id, tbl.history()[-3].snapshot_id
-    branch_name, tag_name, max_ref_age_ms = "test_branch_max_ref_age_ms", "test_tag_max_ref_age_ms", 604800000
-    with tbl.manage_snapshots() as ms:
-        ms.create_branch(branch_name=branch_name, snapshot_id=branch_snapshot_id)
-        ms.set_max_ref_age_ms(ref_name=branch_name, max_ref_age_ms=max_ref_age_ms)
-        ms.create_tag(tag_name=tag_name, snapshot_id=tag_snapshot_id)
-        ms.set_max_ref_age_ms(ref_name=tag_name, max_ref_age_ms=max_ref_age_ms)
-    assert tbl.metadata.refs[branch_name] == SnapshotRef(
-        snapshot_id=branch_snapshot_id, snapshot_ref_type=str(SnapshotRefType.BRANCH), max_ref_age_ms=max_ref_age_ms
-    )
-    assert tbl.metadata.refs[tag_name] == SnapshotRef(
-        snapshot_id=tag_snapshot_id, snapshot_ref_type=str(SnapshotRefType.TAG), max_ref_age_ms=max_ref_age_ms
     )
 
 

@@ -2002,6 +2002,7 @@ class ManageSnapshots(UpdateTableMetadata["ManageSnapshots"]):
         Returns:
             This for method chaining
         """
+        self._commit_if_ref_updates_exist()
         return self._set_ref_snapshot(
             snapshot_id=snapshot_id,
             ref_name=tag_name,
@@ -2029,6 +2030,7 @@ class ManageSnapshots(UpdateTableMetadata["ManageSnapshots"]):
         Returns:
             This for method chaining
         """
+        self._commit_if_ref_updates_exist()
         return self._set_ref_snapshot(
             snapshot_id=snapshot_id,
             ref_name=branch_name,
@@ -2115,9 +2117,10 @@ class ManageSnapshots(UpdateTableMetadata["ManageSnapshots"]):
         Returns:
             This for method chaining
         """
-        if branch_name not in self._transaction._table.metadata.refs:
+        self._commit_if_ref_updates_exist()
+        if branch_name not in self._transaction.table_metadata.refs:
             raise ValidationError(f"ref {branch_name} not found")
-        snapshot_id = self._transaction._table.metadata.refs[branch_name].snapshot_id
+        snapshot_id = self._transaction.table_metadata.refs[branch_name].snapshot_id
         return self._set_ref_snapshot(
             snapshot_id=snapshot_id,
             ref_name=branch_name,
@@ -2136,9 +2139,10 @@ class ManageSnapshots(UpdateTableMetadata["ManageSnapshots"]):
         Returns:
             This for method chaining
         """
-        if branch_name not in self._transaction._table.metadata.refs:
+        self._commit_if_ref_updates_exist()
+        if branch_name not in self._transaction.table_metadata.refs:
             raise ValidationError(f"ref {branch_name} not found")
-        snapshot_id = self._transaction._table.metadata.refs[branch_name].snapshot_id
+        snapshot_id = self._transaction.table_metadata.refs[branch_name].snapshot_id
         return self._set_ref_snapshot(
             snapshot_id=snapshot_id,
             ref_name=branch_name,
@@ -2157,11 +2161,14 @@ class ManageSnapshots(UpdateTableMetadata["ManageSnapshots"]):
         Returns:
             This for method chaining
         """
-        if ref_name not in self._transaction._table.metadata.refs:
+        self._commit_if_ref_updates_exist()
+        if ref_name not in self._transaction.table_metadata.refs:
             raise ValidationError(f"ref {ref_name} not found")
-        snapshot_id = self._transaction._table.metadata.refs[ref_name].snapshot_id
-        ref_type = self._transaction._table.metadata.refs[ref_name].snapshot_ref_type
-        return self._set_ref_snapshot(snapshot_id=snapshot_id, ref_name=ref_name, type=ref_type, max_ref_age_ms=max_ref_age_ms)
+        snapshot_id = self._transaction.table_metadata.refs[ref_name].snapshot_id
+        ref_type = self._transaction.table_metadata.refs[ref_name].snapshot_ref_type
+        return self._set_ref_snapshot(
+            snapshot_id=snapshot_id, ref_name=ref_name, type=str(ref_type), max_ref_age_ms=max_ref_age_ms
+        )
 
 
 class UpdateSchema(UpdateTableMetadata["UpdateSchema"]):
